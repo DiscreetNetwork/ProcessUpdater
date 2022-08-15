@@ -26,7 +26,6 @@ namespace CLI.Services
         {
             var request = await _httpClient.GetAsync($"https://api.github.com/repos/{repository}/releases/latest");
             var content = await request.Content.ReadAsStringAsync();
-
             if (!request.IsSuccessStatusCode) return null;
 
             GithubReleaseResponse release = JsonSerializer.Deserialize<GithubReleaseResponse>(content);

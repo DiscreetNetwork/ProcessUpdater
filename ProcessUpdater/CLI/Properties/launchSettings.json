@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CLI": {
+      "commandName": "Project",
+      "commandLineArgs": "-g \"DiscreetNetwork/discreet-gui+win-x64.zip\" \"DiscreetNetwork/DiscreetCore+DiscreetCore.dll\" -o \"C:\\Users\\Ricki\\Documents\\Test\\a\""
+    }
+  }
+}

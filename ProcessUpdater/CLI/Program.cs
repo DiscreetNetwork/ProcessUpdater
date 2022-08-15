@@ -1,62 +1,79 @@
-﻿using CLI.Services;
-using CLI.Utility;
+﻿using CLI.Flows;
 using CommandLine;
 using System.Diagnostics;
 
-
-Parser.Default.ParseArguments<Options>(args)
-    .WithParsed<Options>(async o =>
+bool CopyDirectory(string sourceDirectoryPath, string outputDirectoryPath)
+{
+    DirectoryInfo di = new DirectoryInfo(sourceDirectoryPath);
+    foreach (var file in di.GetFiles())
     {
-        Process target = Process.GetProcessesByName(o.Parent).FirstOrDefault();
-        target.Kill();
-
-
-        // fetch new files 
-        GithubReleaseService grs = new GithubReleaseService(new HttpClient());
-        var release = await grs.GetRelease("rickifunk/versioning-test");
-        if (release is null) throw new Exception();
-
-        var assets = await grs.GetAssets(release.AssetsUrl);
-        var asset = await grs.DownloadAsset(assets[0]);
-
-        var tempDir = new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "tmp"));
-        if (tempDir.Exists) tempDir.Delete(true);
-        tempDir.Create();
-        Zipper.Unzip(asset, tempDir.FullName);
-
-        bool updated = false;
-        while (!updated)
+        try
         {
-            bool retry = false;
+            File.Copy(file.FullName, Path.Combine(outputDirectoryPath, file.Name), true);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
 
-            DirectoryInfo tempPublishDir = new DirectoryInfo(Path.Combine(tempDir.FullName, "publish"));
+    foreach (var dir in di.GetDirectories())
+    {
+        DirectoryInfo subDirInfo = new DirectoryInfo(Path.Combine(outputDirectoryPath, dir.Name));
+        if (!subDirInfo.Exists) subDirInfo.Create();
 
-            foreach (var fileInfo in tempPublishDir.GetFiles())
+        return CopyDirectory(dir.FullName, subDirInfo.FullName);
+    }
+
+    return true;
+}
+
+await Parser.Default.ParseArguments<Options>(args)
+    .WithParsedAsync<Options>(async o =>
+    {
+        if(o.Kill && !string.IsNullOrWhiteSpace(o.Parent))
+        {
+            Console.WriteLine("Killing parent process");
+            Process target = Process.GetProcessesByName(o.Parent).FirstOrDefault();
+            if (target is null)
             {
-                try
-                {
-                    File.Copy(fileInfo.FullName, Path.Combine(Directory.GetCurrentDirectory(), fileInfo.Name), true);
-                }
-                catch (global::System.Exception)
-                {
-                    global::System.Console.WriteLine("Failed to copy, retrying");
-                    retry = true;
-                    Thread.Sleep(2000);
-                }
+                throw new Exception($"Could not find parent process - {o.Parent}");
             }
 
-            if (retry) continue;
-
-            updated = true;
+            target.Kill();
         }
 
-        if (tempDir.Exists) tempDir.Delete(true);
+        DirectoryInfo tempFileDirectoryInfo = null;
 
-        ProcessStartInfo psi = new()
+        if(o.GithubRepositories != null && o.GithubRepositories.Any())
         {
-            FileName = $"WPF.exe",
-        };
-        Process.Start(psi);
+            Console.WriteLine("Running GithubFlow");
+            tempFileDirectoryInfo = new DirectoryInfo(await new GithubFlow().Run(o.GithubRepositories));
+        }
+
+        while (true)
+        {
+            //TODO: Delete all files in the output directory
+            // If a file from a previous version is gone due to the new update, we should make sure its deleted while we add the new files
+            
+            if(!CopyDirectory(tempFileDirectoryInfo.FullName, string.IsNullOrWhiteSpace(o.OutputDirectoryPath) ? Directory.GetCurrentDirectory() : o.OutputDirectoryPath))
+            {
+                continue;
+            }
+
+            break;
+        }
+
+        if (tempFileDirectoryInfo.Exists) tempFileDirectoryInfo.Delete(true);
+
+        if(!string.IsNullOrWhiteSpace(o.Parent))
+        {
+            ProcessStartInfo psi = new()
+            {
+                FileName = o.Parent,
+            };
+            Process.Start(psi);
+        }
 
         Environment.Exit(0);
     }
@@ -64,6 +81,18 @@ Parser.Default.ParseArguments<Options>(args)
 
 public class Options
 {
-    [Option('p', "parent", Required = true, HelpText = "Name of the parent process that started this process")]
+    [Option('p', "parent", Required = false, HelpText = "Name of the parent process that started this process")]
     public string Parent { get; set; }
+
+    [Option('k', "kill", Required = false, HelpText = "Boolean that indiciates whether or not to kill the calling process before updating")]
+    public bool Kill { get; set; }
+
+    [Option('g', "grepository", Required = true, HelpText = "Space seperated name(s) of the github repository (+ asset) name used to fetch new binaries from. Format ''{organization}/{project}+{releaseAssetName}''")]
+    public IEnumerable<string> GithubRepositories { get; set; }
+
+    [Option('o', "output", Required = false, HelpText = "Full path to the directory in which to output the new files. Defaults to current directory")]
+    public string OutputDirectoryPath { get; set; }
 }
+
+
+
