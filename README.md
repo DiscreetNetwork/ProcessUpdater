@@ -13,7 +13,7 @@ Updater [ARGS]
 Name of the parent process calling the CLI. Used by the CLI to kill the parent before updating the binaries and starting the parent after the updating is done
 ```
 
-[-gr, --grepository, Required] 
+[-g, --grepository, Required] 
 ```
 Name of the github repository to fetch new binaries from. Format is "{organization}/{project}"
 ```
