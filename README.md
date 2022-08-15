@@ -4,10 +4,10 @@ Simple crossplatform CLI that is capable of updating other processes
 
 ### Usage
 ```
-Updater [OPTIONS]
+Updater [ARGS]
 ```
 
-#### Options
+### Arguements
 [-p, --parent, Required] 
 ```
 Name of the parent process calling the CLI. Used by the CLI to kill the parent before updating the binaries and starting the parent after the updating is done
