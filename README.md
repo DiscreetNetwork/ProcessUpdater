@@ -15,7 +15,7 @@ Name of the parent process calling the CLI. Used by the CLI to kill the parent b
 
 [-g, --grepository, Required] 
 ```
-Name of the github repository to fetch new binaries from. Format is "{organization}/{project}"
+Space seperated name(s) of the github repository / repositories to fetch new binaries from. Format is "{organization}/{project}"
 ```
 
 [-o, --output, Optional] 
@@ -25,7 +25,12 @@ Path to a directory in which the updated files should be outputted to. If this i
 
 
 ### Sample usage
-For windows
+For windows with a single github repository
 ```
 Updater.exe --parent "DiscreetWallet" --grepository "DiscreetNetwork/discreet-gui"
+```
+
+For windows with multiple github repository
+```
+Updater.exe --parent "DiscreetWallet" --grepository "DiscreetNetwork/discreet-gui" "DiscreetNetwork/DiscreetCore"
 ```
