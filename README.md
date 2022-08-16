@@ -1,6 +1,9 @@
 # ProcessUpdater
-Simple crossplatform CLI that is capable of updating other processes. Bundled with Discreet Daemon & Wallet.
+Simple crossplatform CLI that is capable of updating other processes. 
 
+Bundled with Discreet Daemon & Wallet.
+
+The build process for the updater can be seen inside the `.github/workflows/master-push.yml` file, when building either the daemon or the wallet manually from source.
 
 ### Usage
 ```
