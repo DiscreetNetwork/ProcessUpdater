@@ -1,5 +1,5 @@
 # ProcessUpdater
-Simple crossplatform CLI that is capable of updating other processes
+Simple crossplatform CLI that is capable of updating other processes. Bundled with Discreet Daemon & Wallet.
 
 
 ### Usage
@@ -10,20 +10,20 @@ Updater [ARGS]
 ### Arguements
 [-p, --parent] 
 ```
-Name of the parent process calling the CLI. Used by the CLI to kill the parent before updating the binaries and starting the parent after the updating is done
+Name of the process calling the CLI. Used by the CLI to shut down the calling process before updating the binaries, and also starting the calling process after the updating is done
 ```
 
 [-k, --kill]
 ```
-Boolean that indiciates whether or not to kill the calling process before updating
+Boolean that indiciates whether or not to shut down the process specified by the `Parent` arguement
 ```
 
 [-g, --grepository, Required] 
 ```
-Space seperated name(s) of the github repository (+ asset) name used to fetch new binaries from. Format "{organization}/{project}+{releaseAssetName}"
+Space seperated name(s) of the github repository (+ asset) name used to fetch new binaries from. Format "{organization}/{project}+{releaseAssetName}". It will use the latest release of the specified repository
 ```
 
-[-o, --output, Optional] 
+[-o, --output] 
 ```
 Full path to the directory in which to output the new files. Defaults to current directory
 ```
