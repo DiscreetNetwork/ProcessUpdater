@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CLI.Utility
+namespace Updater.Utility
 {
     public class Zipper
     {

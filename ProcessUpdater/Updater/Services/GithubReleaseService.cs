@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace CLI.Services
+namespace Updater.Services
 {
     public class GithubReleaseService
     {

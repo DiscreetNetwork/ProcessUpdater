@@ -1,12 +1,12 @@
-﻿using CLI.Services;
-using CLI.Utility;
+﻿using Updater.Services;
+using Updater.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CLI.Flows
+namespace Updater.Flows
 {
     public class GithubFlow
     {

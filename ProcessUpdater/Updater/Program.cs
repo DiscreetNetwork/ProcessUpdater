@@ -1,4 +1,4 @@
-﻿using CLI.Flows;
+﻿using Updater.Flows;
 using CommandLine;
 using System.Diagnostics;
 
