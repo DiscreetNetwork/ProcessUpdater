@@ -38,7 +38,7 @@ For windows with a single github repository
 Updater.exe --parent "DiscreetWallet" --grepository "DiscreetNetwork/discreet-gui+win-x64.zip"
 ```
 
-For windows with multiple github repository
+For windows with multiple github repositories
 ```
 Updater.exe --parent "DiscreetWallet" --grepository "DiscreetNetwork/discreet-gui+win-x64.zip" "DiscreetNetwork/DiscreetCore+DiscreetCore.dll"
 ```
