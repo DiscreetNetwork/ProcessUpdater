@@ -11,8 +11,9 @@ bool CopyDirectory(string sourceDirectoryPath, string outputDirectoryPath)
         {
             File.Copy(file.FullName, Path.Combine(outputDirectoryPath, file.Name), true);
         }
-        catch (Exception)
+        catch (Exception e)
         {
+            Console.WriteLine(e.Message);
             return false;
         }
     }
@@ -48,6 +49,10 @@ await Parser.Default.ParseArguments<Options>(args)
         if(o.GithubRepositories != null && o.GithubRepositories.Any())
         {
             Console.WriteLine("Running GithubFlow");
+            foreach (var repo in o.GithubRepositories)
+            {
+                global::System.Console.WriteLine(repo);
+            }
             tempFileDirectoryInfo = new DirectoryInfo(await new GithubFlow().Run(o.GithubRepositories));
         }
 

@@ -16,6 +16,7 @@ namespace Updater.Flows
 
             var tempDir = new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "tmp"));
             if (tempDir.Exists) tempDir.Delete(true);
+            
             tempDir.Create();
 
             foreach (var repo in githubRepositories)
