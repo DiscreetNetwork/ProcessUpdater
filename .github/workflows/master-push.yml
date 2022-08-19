@@ -36,12 +36,12 @@ jobs:
 
     - name: Zip [WIN-X64]
       run: |
-        cd ProcessUpdater/CLI/bin/Release/net6.0/win-x64/publish
+        cd ProcessUpdater/Updater/bin/Release/net6.0/win-x64/publish
         zip -qq -r ../win-x64.zip .
         
     - name: Tar bz2 [LINUX-x64]
       run: |
-        cd ProcessUpdater/CLI/bin/Release/net6.0/linux-x64/publish
+        cd ProcessUpdater/Updater/bin/Release/net6.0/linux-x64/publish
         tar cfvj ../linux-x64.tar.bz2 .
         
     - uses: dev-drprasad/delete-older-releases@v0.2.0
@@ -68,7 +68,7 @@ jobs:
         GITHUB_TOKEN: ${{ github.token }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ProcessUpdater/CLI/bin/Release/net6.0/win-x64/win-x64.zip
+        asset_path: ProcessUpdater/Updater/bin/Release/net6.0/win-x64/win-x64.zip
         asset_name: win-x64.zip
         asset_content_type: application/zip
         
@@ -78,6 +78,6 @@ jobs:
         GITHUB_TOKEN: ${{ github.token }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ProcessUpdater/CLI/bin/Release/net6.0/linux-x64/linux-x64.tar.bz2
+        asset_path: ProcessUpdater/Updater/bin/Release/net6.0/linux-x64/linux-x64.tar.bz2
         asset_name: linux-x64.tar.bz2
         asset_content_type: application/bzip2
