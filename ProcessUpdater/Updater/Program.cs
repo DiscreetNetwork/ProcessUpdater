@@ -2,20 +2,12 @@
 using CommandLine;
 using System.Diagnostics;
 
-bool CopyDirectory(string sourceDirectoryPath, string outputDirectoryPath)
+void CopyDirectory(string sourceDirectoryPath, string outputDirectoryPath)
 {
     DirectoryInfo di = new DirectoryInfo(sourceDirectoryPath);
     foreach (var file in di.GetFiles())
     {
-        try
-        {
-            File.Copy(file.FullName, Path.Combine(outputDirectoryPath, file.Name), true);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e.Message);
-            return false;
-        }
+        File.Copy(file.FullName, Path.Combine(outputDirectoryPath, file.Name), true);
     }
 
     foreach (var dir in di.GetDirectories())
@@ -23,10 +15,8 @@ bool CopyDirectory(string sourceDirectoryPath, string outputDirectoryPath)
         DirectoryInfo subDirInfo = new DirectoryInfo(Path.Combine(outputDirectoryPath, dir.Name));
         if (!subDirInfo.Exists) subDirInfo.Create();
 
-        return CopyDirectory(dir.FullName, subDirInfo.FullName);
+        CopyDirectory(dir.FullName, subDirInfo.FullName);
     }
-
-    return true;
 }
 
 await Parser.Default.ParseArguments<Options>(args)
@@ -35,12 +25,40 @@ await Parser.Default.ParseArguments<Options>(args)
         if(o.Kill && !string.IsNullOrWhiteSpace(o.Parent))
         {
             Console.WriteLine("Killing parent process");
+
             Process target = Process.GetProcessesByName(o.Parent).FirstOrDefault();
             if (target is null)
             {
-                throw new Exception($"Could not find parent process - {o.Parent}");
+                global::System.Console.WriteLine("Could not find parent process by name. Retrying using path");
             }
 
+            FileInfo fi = new FileInfo(o.Parent);
+            if(fi.Exists)
+            {
+                target = Process.GetProcessesByName(fi.Name).FirstOrDefault();
+                if (target is null) Console.WriteLine("Could not find parent process by using a path. Retrying and appending {.exe}");
+                else global::System.Console.WriteLine("Found parent process");
+            }
+            else
+            {
+                global::System.Console.WriteLine("Could not convert provided parent value to a existing file path. Retrying and appending {.exe}");
+            }
+
+            fi = new FileInfo($"{o.Parent}.exe");
+            if (fi.Exists)
+            {
+                target = Process.GetProcessesByName(fi.Name.Replace(".exe", "")).FirstOrDefault();
+                if(target is null)
+                {
+                    throw new Exception($"Found existing file at: {fi.FullName} - but could not find a running parent process with path.Name - {fi.Name}");
+                }
+                else global::System.Console.WriteLine("Found parent process");
+            }
+            else
+            {
+                throw new Exception($"Could not find parent process - {o.Parent}");
+            }
+            
             target.Kill();
         }
 
@@ -51,35 +69,116 @@ await Parser.Default.ParseArguments<Options>(args)
             Console.WriteLine("Running GithubFlow");
             foreach (var repo in o.GithubRepositories)
             {
-                global::System.Console.WriteLine(repo);
+                global::System.Console.WriteLine($"- {repo}");
             }
             tempFileDirectoryInfo = new DirectoryInfo(await new GithubFlow().Run(o.GithubRepositories));
+            if(tempFileDirectoryInfo.Exists && tempFileDirectoryInfo.GetFiles().Any())
+            {
+                global::System.Console.WriteLine("Downloaded all files");
+            }
+            else
+            {
+                throw new Exception("Aborting update. Failed to download files");
+            }
         }
 
-        while (true)
+        bool aborted = false;
+        int retries = 0;
+        while (!aborted)
         {
-            //TODO: Delete all files in the output directory
-            // If a file from a previous version is gone due to the new update, we should make sure its deleted while we add the new files
-            
-            if(!CopyDirectory(tempFileDirectoryInfo.FullName, string.IsNullOrWhiteSpace(o.OutputDirectoryPath) ? Directory.GetCurrentDirectory() : o.OutputDirectoryPath))
+            // Try to delete previous files
+            global::System.Console.WriteLine($"Deleting old files - Attempts[{retries + 1}]");
+
+            try
             {
+                var outputDirectory = new DirectoryInfo(string.IsNullOrWhiteSpace(o.OutputDirectoryPath) ? Directory.GetCurrentDirectory() : o.OutputDirectoryPath);
+                foreach (var file in outputDirectory.GetFiles())
+                {
+                    file.Delete();
+                }
+
+                foreach (var dir in outputDirectory.GetDirectories())
+                {
+                    // Dont delete the utility folder
+                    if (dir.Name.Equals("tmp") || dir.Name.Equals("utility")) continue;
+
+                    dir.Delete(true);
+                }
+            }
+            catch (global::System.Exception e)
+            {
+                if (retries == 4)
+                {
+                    aborted = true;
+                    break;
+                }
+
+                global::System.Console.WriteLine(e.Message);
+                global::System.Console.WriteLine($"Failed to delete old files - Retrying in 2 seconds");
+                await Task.Delay(2000);
+                retries++;
                 continue;
             }
 
             break;
         }
 
+        if(aborted)
+        {
+            global::System.Console.WriteLine("Aborting update. Failed to delete old files");
+            return;
+        }
+
+        retries = 0; // Reset retries for upcomiong copy section
+
+        while(!aborted)
+        {
+            global::System.Console.WriteLine($"Copying new files to output directory - Attempt[{retries + 1}]");
+
+            try
+            {
+                CopyDirectory(tempFileDirectoryInfo.FullName, string.IsNullOrWhiteSpace(o.OutputDirectoryPath) ? Directory.GetCurrentDirectory() : o.OutputDirectoryPath);
+            }
+            catch (Exception e)
+            {
+                if (retries == 4)
+                {
+                    aborted = true;
+                    break;
+                }
+
+                global::System.Console.WriteLine(e.Message);
+                global::System.Console.WriteLine($"Failed to copy files - Retrying in 2 seconds");
+                await Task.Delay(2000);
+                retries++;
+                continue;
+            }
+
+            break;
+        }
+
+        if (aborted)
+        {
+            global::System.Console.WriteLine("Aborting update. Failed to copy new files to destination");
+            return;
+        }
+
         if (tempFileDirectoryInfo.Exists) tempFileDirectoryInfo.Delete(true);
 
         if(!string.IsNullOrWhiteSpace(o.Parent))
         {
+            global::System.Console.WriteLine($"Starting process: {o.Parent}");
             ProcessStartInfo psi = new()
             {
                 FileName = o.Parent,
             };
-            Process.Start(psi);
+            if(Process.Start(psi) == null)
+            {
+                global::System.Console.WriteLine($"Failed to start parent process: {o.Parent}");
+            }
         }
 
+        global::System.Console.WriteLine("Update completed");
         Environment.Exit(0);
     }
 );
